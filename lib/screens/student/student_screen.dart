@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:question_and_answer_edu/screens/student/dashboard_view.dart';
+import 'package:question_and_answer_edu/screens/student/profile_view.dart';
 import 'new_question_form.dart';
 
 class StudentScreen extends StatefulWidget {
-  const StudentScreen({Key? key}) : super(key: key);
-
+  final String studentCode;
+  const StudentScreen({Key? key, required this.studentCode}) : super(key: key);
   @override
   State<StudentScreen> createState() => _StudentScreenState();
 }
@@ -22,48 +24,26 @@ class _StudentScreenState extends State<StudentScreen> {
     _FeatureCardData('Cài đặt', Icons.settings),
   ];
 
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      StudentDashboardView(studentCode: widget.studentCode), // Truyền studentCode
+      const Center(child: Text('FAQ Page')),
+      StudentProfileView(studentCode: widget.studentCode),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: GridView.count(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            children:
-                _features
-                    .map(
-                      (feature) => _FeatureCard(
-                        title: feature.title,
-                        icon: feature.icon,
-                        onTap: () {
-                          final index = _features.indexOf(feature);
-
-                          if (feature.title == 'Đặt câu hỏi mới') {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const NewQuestionForm(),
-                              ),
-                            );
-                          } else {
-                            setState(() {
-                              _currentIndex = index;
-                            });
-                          }
-                        },
-                      ),
-                    )
-                    .toList(),
-          ),
-        ),
-      ),
+      body: _pages[_currentIndex], // ✅ sử dụng tab hiện tại
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: Color(0xFF2C3E50),
+        selectedItemColor: const Color(0xFF2C3E50),
         unselectedItemColor: Colors.grey,
         onTap: (index) {
           setState(() {
@@ -75,13 +55,20 @@ class _StudentScreenState extends State<StudentScreen> {
             icon: Icon(Icons.dashboard),
             label: 'Tổng quan',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: 'FAQ'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Cá nhân'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.help_outline),
+            label: 'FAQ',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Cá nhân',
+          ),
         ],
       ),
     );
   }
 }
+
 
 class _FeatureCardData {
   final String title;

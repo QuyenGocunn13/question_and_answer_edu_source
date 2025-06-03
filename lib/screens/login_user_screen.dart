@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:question_and_answer_edu/database/student_table.dart';
 import 'teacher/teacher_screen.dart';
 import 'student/student_screen.dart';
 import '../database/account_table.dart'; // Import DBHelper để truy vấn tài khoản
@@ -21,7 +22,6 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
-    // Truy vấn tài khoản từ cơ sở dữ liệu
     final accounts = await _dbHelper.getAllAccounts();
     final account = accounts.firstWhere(
       (acc) =>
@@ -38,24 +38,25 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
           ),
     );
 
-    if (account.username.isNotEmpty) {
-      if (account.role == UserRole.student) {
+    if (account.username.isNotEmpty && account.role == UserRole.student) {
+      final studentDb = StudentDBHelper();
+      final student = await studentDb.getStudentByCode(account.username);
+
+      if (student != null) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const StudentScreen()),
+          MaterialPageRoute(
+            builder: (_) => StudentScreen(studentCode: student.studentCode),
+          ),
         );
-      } else if (account.role == UserRole.teacher) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const TeacherScreen()),
-        );
+      } else {
+        setState(() {
+          _errorMessage =
+              'Không tìm thấy sinh viên với mã: ${account.username}';
+        });
       }
-    } else {
-      setState(() {
-        _errorMessage = 'Tài khoản hoặc mật khẩu không đúng';
-      });
     }
-  }
+  } // ✅ ← Đóng đúng hàm _login()
 
   @override
   Widget build(BuildContext context) {
@@ -80,8 +81,7 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
                     TextFormField(
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.person),
-                        labelText:
-                            'Tên đăng nhập', // Đổi từ Email thành Tên đăng nhập
+                        labelText: 'Tên đăng nhập',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -90,7 +90,7 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
                           (v) =>
                               (v == null || v.isEmpty)
                                   ? 'Vui lòng nhập tên đăng nhập'
-                                  : null, // Xóa yêu cầu @
+                                  : null,
                       onSaved: (v) => _username = v!.trim(),
                     ),
                     const SizedBox(height: 20),
