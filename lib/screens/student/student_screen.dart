@@ -1,0 +1,135 @@
+import 'package:flutter/material.dart';
+import 'new_question_form.dart';
+
+class StudentScreen extends StatefulWidget {
+  const StudentScreen({Key? key}) : super(key: key);
+
+  @override
+  State<StudentScreen> createState() => _StudentScreenState();
+}
+
+class _StudentScreenState extends State<StudentScreen> {
+  int _currentIndex = 0;
+
+  final List<_FeatureCardData> _features = [
+    _FeatureCardData('Tổng quan', Icons.dashboard),
+    _FeatureCardData('Câu hỏi thường gặp', Icons.help_outline),
+    _FeatureCardData('Đặt câu hỏi mới', Icons.edit_note),
+    _FeatureCardData('Tải biểu mẫu', Icons.file_download),
+    _FeatureCardData('Thông tin cá nhân', Icons.person),
+    _FeatureCardData('Hộp thoại', Icons.chat),
+    _FeatureCardData('Thông báo', Icons.notifications),
+    _FeatureCardData('Cài đặt', Icons.settings),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F6FA),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: GridView.count(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            children:
+                _features
+                    .map(
+                      (feature) => _FeatureCard(
+                        title: feature.title,
+                        icon: feature.icon,
+                        onTap: () {
+                          final index = _features.indexOf(feature);
+
+                          if (feature.title == 'Đặt câu hỏi mới') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const NewQuestionForm(),
+                              ),
+                            );
+                          } else {
+                            setState(() {
+                              _currentIndex = index;
+                            });
+                          }
+                        },
+                      ),
+                    )
+                    .toList(),
+          ),
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        selectedItemColor: Color(0xFF2C3E50),
+        unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Tổng quan',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: 'FAQ'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Cá nhân'),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeatureCardData {
+  final String title;
+  final IconData icon;
+
+  const _FeatureCardData(this.title, this.icon);
+}
+
+class _FeatureCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _FeatureCard({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 4,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 48, color: Color(0xFF2C3E50)),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
