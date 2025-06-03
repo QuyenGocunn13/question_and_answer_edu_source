@@ -42,12 +42,17 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
       if (account.role == UserRole.student) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const StudentScreen()),
+          MaterialPageRoute(
+            builder: (_) => const StudentScreen(),
+          ), // Giả định StudentScreen chưa yêu cầu userId
         );
       } else if (account.role == UserRole.teacher) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const TeacherScreen()),
+          MaterialPageRoute(
+            builder:
+                (_) => TeacherScreen(userId: account.userId), // Truyền userId
+          ),
         );
       }
     } else {
@@ -80,8 +85,7 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
                     TextFormField(
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.person),
-                        labelText:
-                            'Tên đăng nhập', // Đổi từ Email thành Tên đăng nhập
+                        labelText: 'Tên đăng nhập',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -90,7 +94,7 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
                           (v) =>
                               (v == null || v.isEmpty)
                                   ? 'Vui lòng nhập tên đăng nhập'
-                                  : null, // Xóa yêu cầu @
+                                  : null,
                       onSaved: (v) => _username = v!.trim(),
                     ),
                     const SizedBox(height: 20),

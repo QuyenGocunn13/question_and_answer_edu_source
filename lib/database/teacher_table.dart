@@ -32,6 +32,36 @@ class TeacherDBHelper {
     return result.isNotEmpty;
   }
 
+  Future<Teacher?> getTeacherByUserId(int userId) async {
+    final db = await database;
+    try {
+      final maps = await db.query(
+        'teachers',
+        where: 'userId = ? AND isDeleted = 0',
+        whereArgs: [userId],
+      );
+
+      if (maps.isEmpty) return null;
+
+      final data = maps.first;
+      return Teacher(
+        userId: data['userId'] as int,
+        teacherCode: data['teacherCode'] as String,
+        fullName: data['fullName'] as String,
+        gender: Gender.values.firstWhere(
+          (e) => e.toString().split('.').last == data['gender'],
+          orElse: () => Gender.male,
+        ),
+        dateOfBirth: DateTime.parse(data['dateOfBirth'] as String),
+        profileImage: data['profileImage'] as String? ?? '',
+        isDeleted: (data['isDeleted'] as int) == 1,
+      );
+    } catch (e) {
+      print('Lỗi khi lấy thông tin giáo viên theo userId: $e');
+      return null;
+    }
+  }
+
   Future<Teacher?> insertTeacher(Teacher teacher) async {
     final db = await database;
     final dbHelper = DBHelper();
@@ -97,28 +127,33 @@ class TeacherDBHelper {
 
   Future<Teacher?> getTeacherByCode(String teacherCode) async {
     final db = await database;
-    final maps = await db.query(
-      'teachers',
-      where: 'teacherCode = ? AND isDeleted = 0',
-      whereArgs: [teacherCode],
-    );
-
-    if (maps.isNotEmpty) {
-      final data = maps.first;
-      return Teacher(
-        userId: data['userId'] as int,
-        teacherCode: data['teacherCode'] as String,
-        fullName: data['fullName'] as String,
-        gender: Gender.values.firstWhere(
-          (e) => e.toString().split('.').last == data['gender'],
-          orElse: () => Gender.male,
-        ),
-        dateOfBirth: DateTime.parse(data['dateOfBirth'] as String),
-        profileImage: data['profileImage'] as String,
-        isDeleted: (data['isDeleted'] as int) == 1,
+    try {
+      final maps = await db.query(
+        'teachers',
+        where: 'teacherCode = ? AND isDeleted = 0',
+        whereArgs: [teacherCode],
       );
+
+      if (maps.isNotEmpty) {
+        final data = maps.first;
+        return Teacher(
+          userId: data['userId'] as int,
+          teacherCode: data['teacherCode'] as String,
+          fullName: data['fullName'] as String,
+          gender: Gender.values.firstWhere(
+            (e) => e.toString().split('.').last == data['gender'],
+            orElse: () => Gender.male,
+          ),
+          dateOfBirth: DateTime.parse(data['dateOfBirth'] as String),
+          profileImage: data['profileImage'] as String? ?? '',
+          isDeleted: (data['isDeleted'] as int) == 1,
+        );
+      }
+      return null;
+    } catch (e) {
+      print('Lỗi khi lấy thông tin giáo viên theo teacherCode: $e');
+      return null;
     }
-    return null;
   }
 
   Future<int> updateTeacher(Teacher teacher) async {
@@ -127,15 +162,14 @@ class TeacherDBHelper {
       return await db.update(
         'teachers',
         {
-          'userId': teacher.userId,
           'fullName': teacher.fullName,
           'gender': teacher.gender.toString().split('.').last,
           'dateOfBirth': teacher.dateOfBirth.toIso8601String(),
           'profileImage': teacher.profileImage,
           'isDeleted': teacher.isDeleted ? 1 : 0,
         },
-        where: 'teacherCode = ?',
-        whereArgs: [teacher.teacherCode],
+        where: 'userId = ?',
+        whereArgs: [teacher.userId],
       );
     } catch (e) {
       print('Lỗi khi cập nhật giáo viên: $e');
@@ -174,7 +208,7 @@ class TeacherDBHelper {
             orElse: () => Gender.male,
           ),
           dateOfBirth: DateTime.parse(data['dateOfBirth'] as String),
-          profileImage: data['profileImage'] as String,
+          profileImage: data['profileImage'] as String? ?? '',
           isDeleted: (data['isDeleted'] as int) == 1,
         );
       });

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Thêm SharedPreferences
+import '../teacher/profile_view.dart'; // Import TeacherProfileView
 
 class TeacherScreen extends StatefulWidget {
-  const TeacherScreen({Key? key}) : super(key: key);
+  final int userId;
+
+  const TeacherScreen({Key? key, required this.userId}) : super(key: key);
 
   @override
   State<TeacherScreen> createState() => _TeacherScreenState();
@@ -18,6 +22,39 @@ class _TeacherScreenState extends State<TeacherScreen> {
     _FeatureCardData('Tổng quan', Icons.dashboard),
   ];
 
+  Future<void> _logout() async {
+    // Xóa trạng thái đăng nhập
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('userId'); // Xóa userId đã lưu
+    // Điều hướng về màn hình đăng nhập
+    if (Navigator.canPop(context)) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/login',
+        (route) => false, // Xóa toàn bộ stack điều hướng
+      );
+    }
+  }
+
+  void _navigateToScreen(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+
+    if (index == 2) { // Mục "Thông tin cá nhân"
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TeacherProfileView(
+            userId: widget.userId,
+            onLogout: _logout, // Truyền callback đăng xuất
+          ),
+        ),
+      );
+    }
+    // Thêm logic cho các mục khác nếu cần
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,14 +66,12 @@ class _TeacherScreenState extends State<TeacherScreen> {
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
           children: _features
-              .map((feature) => _FeatureCard(
-                    title: feature.title,
-                    icon: feature.icon,
-                    onTap: () {
-                      setState(() {
-                        _currentIndex = _features.indexOf(feature);
-                      });
-                    },
+              .asMap()
+              .entries
+              .map((entry) => _FeatureCard(
+                    title: entry.value.title,
+                    icon: entry.value.icon,
+                    onTap: () => _navigateToScreen(entry.key),
                   ))
               .toList(),
         ),
@@ -45,17 +80,14 @@ class _TeacherScreenState extends State<TeacherScreen> {
         currentIndex: _currentIndex,
         selectedItemColor: Colors.indigo,
         unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: _navigateToScreen,
         items: const [
           BottomNavigationBarItem(
               icon: Icon(Icons.assignment), label: 'Yêu cầu'),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Cá nhân'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Thông báo'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.notifications), label: 'Thông báo'),
           BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Tổng quan'),
         ],
       ),

@@ -33,6 +33,8 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
     _loadTeachers();
   }
 
+  
+
   Future<void> _loadTeachers() async {
     final list = await _dbHelper.getAllTeachers();
     setState(() {
