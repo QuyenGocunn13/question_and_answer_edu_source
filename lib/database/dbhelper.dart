@@ -21,17 +21,15 @@ class DBHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    print('Initializing database at: $path'); // Debug
     return await openDatabase(
       path,
       version: 2,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
-    );
+    ); // Tăng version
   }
 
   Future _createDB(Database db, int version) async {
-    print('Creating database tables...'); // Debug
     // Tạo bảng accounts
     await db.execute('''
       CREATE TABLE accounts (
@@ -69,30 +67,17 @@ class DBHelper {
         fullName TEXT NOT NULL,
         gender TEXT NOT NULL,
         dateOfBirth TEXT NOT NULL,
+        department TEXT NOT NULL DEFAULT 'DEFAULT',
         profileImage TEXT NOT NULL DEFAULT '',
         isDeleted INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (userId) REFERENCES accounts(userId) ON DELETE CASCADE ON UPDATE CASCADE
       )
     ''');
-
-    print('Database tables created successfully'); // Debug
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    print(
-      'Upgrading database from version $oldVersion to $newVersion',
-    ); // Debug
     if (oldVersion < 2) {
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS accounts (
-          userId INTEGER PRIMARY KEY AUTOINCREMENT,
-          username TEXT NOT NULL UNIQUE,
-          password TEXT NOT NULL,
-          role TEXT NOT NULL,
-          isDeleted INTEGER NOT NULL DEFAULT 0
-        )
-      ''');
-
+      // Tạo bảng students nếu chưa có
       await db.execute('''
         CREATE TABLE IF NOT EXISTS students (
           studentCode TEXT PRIMARY KEY,
@@ -110,6 +95,7 @@ class DBHelper {
         )
       ''');
 
+      // Tạo bảng teachers nếu chưa có
       await db.execute('''
         CREATE TABLE IF NOT EXISTS teachers (
           teacherCode TEXT PRIMARY KEY,
@@ -117,6 +103,7 @@ class DBHelper {
           fullName TEXT NOT NULL,
           gender TEXT NOT NULL,
           dateOfBirth TEXT NOT NULL,
+          department TEXT NOT NULL DEFAULT 'DEFAULT',
           profileImage TEXT NOT NULL DEFAULT '',
           isDeleted INTEGER NOT NULL DEFAULT 0,
           FOREIGN KEY (userId) REFERENCES accounts(userId) ON DELETE CASCADE ON UPDATE CASCADE
@@ -125,10 +112,10 @@ class DBHelper {
     }
   }
 
+  // CREATE: Thêm account mới
   Future<int> insertAccount(Account account) async {
     final db = await database;
     try {
-      print('Inserting account: ${account.username}'); // Debug
       return await db.insert('accounts', {
         'username': account.username,
         'password': account.password,
@@ -141,6 +128,7 @@ class DBHelper {
     }
   }
 
+  // READ: Lấy account theo userId
   Future<Account?> getAccountById(int userId) async {
     final db = await database;
     final maps = await db.query(
@@ -164,6 +152,7 @@ class DBHelper {
     return null;
   }
 
+  // UPDATE: Cập nhật thông tin account
   Future<int> updateAccount(Account account) async {
     final db = await database;
     try {
@@ -184,6 +173,7 @@ class DBHelper {
     }
   }
 
+  // DELETE: Xóa mềm account
   Future<int> softDeleteAccount(int userId) async {
     final db = await database;
     try {
@@ -199,6 +189,7 @@ class DBHelper {
     }
   }
 
+  // Lấy tất cả account chưa bị xóa
   Future<List<Account>> getAllAccounts() async {
     final db = await database;
     try {
@@ -221,17 +212,14 @@ class DBHelper {
     }
   }
 
+  // Hàm debug để kiểm tra database
   Future<void> debugDatabase() async {
     final db = await database;
-    try {
-      final accounts = await db.query('accounts');
-      final students = await db.query('students');
-      final teachers = await db.query('teachers');
-      print('Accounts: $accounts');
-      print('Students: $students');
-      print('Teachers: $teachers');
-    } catch (e) {
-      print('Lỗi khi debug database: $e');
-    }
+    final accounts = await db.query('accounts');
+    final students = await db.query('students');
+    final teachers = await db.query('teachers');
+    print('Accounts: $accounts');
+    print('Students: $students');
+    print('Teachers: $teachers');
   }
 }

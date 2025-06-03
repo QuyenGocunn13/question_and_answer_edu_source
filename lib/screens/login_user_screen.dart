@@ -59,10 +59,15 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.email),
                         labelText: 'Email',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      validator: (v) =>
-                          (v == null || !v.contains('@')) ? 'Email không hợp lệ' : null,
+                      validator:
+                          (v) =>
+                              (v == null || !v.contains('@'))
+                                  ? 'Email không hợp lệ'
+                                  : null,
                       onSaved: (v) => _email = v!.trim(),
                     ),
                     const SizedBox(height: 20),
@@ -71,11 +76,15 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.lock),
                         labelText: 'Mật khẩu',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      validator: (v) => (v == null || v.length < 6)
-                          ? 'Mật khẩu tối thiểu 6 ký tự'
-                          : null,
+                      validator:
+                          (v) =>
+                              (v == null || v.length < 6)
+                                  ? 'Mật khẩu tối thiểu 6 ký tự'
+                                  : null,
                       onSaved: (v) => _password = v!.trim(),
                     ),
                     if (_errorMessage != null)
@@ -94,10 +103,14 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           backgroundColor: Colors.green,
                         ),
-                        child: const Text('Đăng nhập', style: TextStyle(fontSize: 16)),
+                        child: const Text(
+                          'Đăng nhập',
+                          style: TextStyle(fontSize: 16),
+                        ),
                       ),
                     ),
                   ],

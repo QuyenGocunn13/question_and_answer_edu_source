@@ -46,9 +46,10 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
     _nameController.text = t.fullName;
     _gender = t.gender;
     _dob = t.dateOfBirth;
-    _imageFile = (t.profileImage.isNotEmpty && !Uri.parse(t.profileImage).isAbsolute)
-        ? File(t.profileImage)
-        : null;
+    _imageFile =
+        (t.profileImage.isNotEmpty && !Uri.parse(t.profileImage).isAbsolute)
+            ? File(t.profileImage)
+            : null;
     _isNew = false;
     setState(() {});
   }
@@ -66,18 +67,22 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
       initialDate: _dob ?? DateTime(now.year - 30),
       firstDate: DateTime(1950),
       lastDate: now,
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: Color(0xFF0D47A1), // xanh đậm
-            onPrimary: Colors.white,
-            onSurface: Colors.black87,
+      builder:
+          (ctx, child) => Theme(
+            data: Theme.of(ctx).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: Color(0xFF0D47A1), // xanh đậm
+                onPrimary: Colors.white,
+                onSurface: Colors.black87,
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF0D47A1),
+                ),
+              ),
+            ),
+            child: child!,
           ),
-          textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: const Color(0xFF0D47A1))),
-        ),
-        child: child!,
-      ),
     );
     if (picked != null) setState(() => _dob = picked);
   }
@@ -95,8 +100,9 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
   Future<void> _save() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vui lòng nhập họ và tên')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Vui lòng nhập họ và tên')));
       return;
     }
 
@@ -115,10 +121,12 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
         await _loadTeachers();
         _selectTeacher(created);
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Thêm giáo viên thành công')));
+          const SnackBar(content: Text('Thêm giáo viên thành công')),
+        );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Lỗi khi tạo giáo viên')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Lỗi khi tạo giáo viên')));
       }
     } else {
       if (_selectedTeacher == null) return;
@@ -135,23 +143,29 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
       await _loadTeachers();
       _selectTeacher(updated);
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cập nhật thông tin giáo viên thành công')));
+        const SnackBar(
+          content: Text('Cập nhật thông tin giáo viên thành công'),
+        ),
+      );
     }
   }
 
   InputDecoration _inputDecoration(String label) => InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF90A4AE)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF0D47A1), width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-      );
+    labelText: label,
+    labelStyle: const TextStyle(
+      color: Colors.black87,
+      fontWeight: FontWeight.w600,
+    ),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: Color(0xFF90A4AE)),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: Color(0xFF0D47A1), width: 2),
+    ),
+    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+  );
 
   Widget _buildCreateButton() {
     return SizedBox(
@@ -185,7 +199,8 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
       height: 220,
       child: ListView.separated(
         itemCount: _teachers.length,
-        separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE0E0E0)),
+        separatorBuilder:
+            (_, __) => const Divider(height: 1, color: Color(0xFFE0E0E0)),
         itemBuilder: (context, i) {
           final t = _teachers[i];
           final selected = t.teacherCode == _selectedTeacher?.teacherCode;
@@ -193,14 +208,16 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 12),
             leading: CircleAvatar(
               radius: 24,
-              backgroundImage: t.profileImage.isNotEmpty
-                  ? (Uri.tryParse(t.profileImage)?.isAbsolute ?? false)
-                      ? NetworkImage(t.profileImage)
-                      : FileImage(File(t.profileImage)) as ImageProvider
-                  : null,
-              child: t.profileImage.isEmpty
-                  ? const Icon(Icons.person, color: Color(0xFF0D47A1))
-                  : null,
+              backgroundImage:
+                  t.profileImage.isNotEmpty
+                      ? (Uri.tryParse(t.profileImage)?.isAbsolute ?? false)
+                          ? NetworkImage(t.profileImage)
+                          : FileImage(File(t.profileImage)) as ImageProvider
+                      : null,
+              child:
+                  t.profileImage.isEmpty
+                      ? const Icon(Icons.person, color: Color(0xFF0D47A1))
+                      : null,
               backgroundColor: Colors.grey.shade100,
             ),
             title: Text(
@@ -218,7 +235,9 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
             onTap: () => _selectTeacher(t),
             selected: selected,
             selectedTileColor: Colors.blue.shade50,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           );
         },
       ),
@@ -226,13 +245,19 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
   }
 
   Widget _buildProfileImage() {
-    final imageProvider = _imageFile != null
-        ? FileImage(_imageFile!)
-        : (_selectedTeacher != null && _selectedTeacher!.profileImage.isNotEmpty
-            ? (Uri.tryParse(_selectedTeacher!.profileImage)?.isAbsolute ?? false)
-                ? NetworkImage(_selectedTeacher!.profileImage)
-                : FileImage(File(_selectedTeacher!.profileImage))
-            : null) as ImageProvider<Object>?;
+    final imageProvider =
+        _imageFile != null
+            ? FileImage(_imageFile!)
+            : (_selectedTeacher != null &&
+                        _selectedTeacher!.profileImage.isNotEmpty
+                    ? (Uri.tryParse(
+                              _selectedTeacher!.profileImage,
+                            )?.isAbsolute ??
+                            false)
+                        ? NetworkImage(_selectedTeacher!.profileImage)
+                        : FileImage(File(_selectedTeacher!.profileImage))
+                    : null)
+                as ImageProvider<Object>?;
 
     return Center(
       child: GestureDetector(
@@ -244,9 +269,14 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
               radius: 60,
               backgroundColor: Colors.grey.shade100,
               backgroundImage: imageProvider,
-              child: imageProvider == null
-                  ? const Icon(Icons.person, size: 60, color: Color(0xFF0D47A1))
-                  : null,
+              child:
+                  imageProvider == null
+                      ? const Icon(
+                        Icons.person,
+                        size: 60,
+                        color: Color(0xFF0D47A1),
+                      )
+                      : null,
             ),
             Container(
               decoration: BoxDecoration(
@@ -255,7 +285,11 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
                 border: Border.all(color: Colors.white, width: 2),
               ),
               padding: const EdgeInsets.all(6),
-              child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.camera_alt,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ],
         ),
@@ -275,15 +309,21 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
         isExpanded: true,
         underline: const SizedBox(),
         iconEnabledColor: const Color(0xFF0D47A1),
-        items: Gender.values
-            .map((g) => DropdownMenuItem(
-                  value: g,
-                  child: Text(
-                    g.toString().split('.').last.toUpperCase(),
-                    style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+        items:
+            Gender.values
+                .map(
+                  (g) => DropdownMenuItem(
+                    value: g,
+                    child: Text(
+                      g.toString().split('.').last.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                ))
-            .toList(),
+                )
+                .toList(),
         onChanged: (v) {
           if (v != null) setState(() => _gender = v);
         },
@@ -312,7 +352,8 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
                 style: TextStyle(
                   fontSize: 16,
                   color: _dob == null ? Colors.black54 : Colors.black87,
-                  fontWeight: _dob == null ? FontWeight.normal : FontWeight.w600,
+                  fontWeight:
+                      _dob == null ? FontWeight.normal : FontWeight.w600,
                 ),
               ),
             ),
@@ -331,13 +372,19 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
         onPressed: _save,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF0D47A1),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           elevation: 3,
           padding: const EdgeInsets.symmetric(vertical: 14),
         ),
         child: const Text(
           'Lưu',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );
@@ -363,9 +410,13 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFF0D47A1)),
-        leading: widget.onBack == null
-            ? null
-            : IconButton(icon: const Icon(Icons.arrow_back), onPressed: widget.onBack),
+        leading:
+            widget.onBack == null
+                ? null
+                : IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: widget.onBack,
+                ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -389,7 +440,10 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
               TextField(
                 controller: _nameController,
                 decoration: _inputDecoration('Họ và tên'),
-                style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 24),
               _buildGenderDropdown(),

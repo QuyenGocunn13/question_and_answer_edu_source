@@ -29,7 +29,10 @@ class _AdminScreenState extends State<AdminScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [const Color.fromARGB(255, 228, 156, 192), Colors.deepPurple.shade300],
+            colors: [
+              const Color.fromARGB(255, 228, 156, 192),
+              Colors.deepPurple.shade300,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -48,12 +51,15 @@ class _AdminScreenState extends State<AdminScreen> {
                     Text(
                       _tabs[_currentIndex].title,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(Icons.settings, color: Color.fromARGB(255, 193, 231, 215)),
+                      icon: const Icon(
+                        Icons.settings,
+                        color: Color.fromARGB(255, 193, 231, 215),
+                      ),
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -111,7 +117,7 @@ class OverviewTab extends StatelessWidget {
   final VoidCallback onNavigateToUserManagement;
 
   const OverviewTab({Key? key, required this.onNavigateToUserManagement})
-      : super(key: key);
+    : super(key: key);
 
   final List<_FunctionItem> _functions = const [
     _FunctionItem(
@@ -164,7 +170,9 @@ class OverviewTab extends StatelessWidget {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Chức năng "${item.title}" đang phát triển'),
+                      content: Text(
+                        'Chức năng "${item.title}" đang phát triển',
+                      ),
                     ),
                   );
                 }
@@ -187,18 +195,18 @@ class OverviewTab extends StatelessWidget {
                     Text(
                       item.title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: Colors.deepPurple.shade800,
-                          ),
+                        fontWeight: FontWeight.w700,
+                        color: Colors.deepPurple.shade800,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 6),
                     Text(
                       item.subtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.deepPurple.shade400,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        color: Colors.deepPurple.shade400,
+                        fontWeight: FontWeight.w500,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -247,4 +255,3 @@ class PlaceholderTab extends StatelessWidget {
     );
   }
 }
-

@@ -30,17 +30,43 @@
 // }
 
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 import 'screens/login_admin_screen.dart';
 import 'screens/login_user_screen.dart';
 import 'screens/admin/student_management.dart';
 import 'screens/admin/teacher_management.dart';
 import 'screens/admin/user_management_view.dart';
-import './database/test.dart';  // import file chứa seedSampleData
+import './database/test.dart'; // import file chứa seedSampleData
+
+// Hàm xóa file app_database.db (dùng khi cần reset)
+Future<void> deleteDatabaseFile() async {
+  final dbPath = await getDatabasesPath();
+  final path = join(dbPath, 'app_database.db');
+  try {
+    await deleteDatabase(path);
+    print('Database deleted at: $path');
+  } catch (e) {
+    print('Error deleting database: $e');
+  }
+}
+
+// Hàm kiểm tra và tạo dữ liệu mẫu nếu cơ sở dữ liệu chưa tồn tại
+Future<void> initializeDatabase() async {
+  final dbPath = await getDatabasesPath();
+  final path = join(dbPath, 'app_database.db');
+  final exists = await databaseExists(path);
+  if (!exists) {
+    await seedSampleData(); // Tạo dữ liệu mẫu chỉ khi db chưa tồn tại
+    print('Sample data seeded at: $path');
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await seedSampleData(); // Tạo dữ liệu mẫu trước khi chạy app
+  // Không xóa database mỗi lần chạy, chỉ khởi tạo nếu chưa có
+  await initializeDatabase();
 
   runApp(const MyApp());
 }
@@ -64,7 +90,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
@@ -117,9 +142,7 @@ class RoleSelectionScreen extends StatelessWidget {
                   ),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
-                    backgroundColor: const Color(
-                      0xFF7E9ED9,
-                    ), // light blue pastel
+                    backgroundColor: const Color(0xFF7E9ED9),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -143,9 +166,7 @@ class RoleSelectionScreen extends StatelessWidget {
                   ),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
-                    backgroundColor: const Color(
-                      0xFF6BC3B7,
-                    ), // light teal pastel
+                    backgroundColor: const Color(0xFF6BC3B7),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
