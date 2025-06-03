@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'teacher/teacher_screen.dart';
 import 'student/student_screen.dart';
+import '../database/account_table.dart'; // Import DBHelper để truy vấn tài khoản
+import '../../models.dart';
 
 class LoginUserScreen extends StatefulWidget {
   const LoginUserScreen({super.key});
@@ -11,26 +13,46 @@ class LoginUserScreen extends StatefulWidget {
 
 class _LoginUserScreenState extends State<LoginUserScreen> {
   final _formKey = GlobalKey<FormState>();
-  String _email = '', _password = '';
+  String _username = '', _password = '';
   String? _errorMessage;
+  final DBHelper _dbHelper = DBHelper(); // Khởi tạo DBHelper
 
-  void _login() {
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
-    if (_email == 'student@example.com' && _password == '123456') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const StudentScreen()),
-      );
-    } else if (_email == 'teacher@example.com' && _password == '123456') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const TeacherScreen()),
-      );
+    // Truy vấn tài khoản từ cơ sở dữ liệu
+    final accounts = await _dbHelper.getAllAccounts();
+    final account = accounts.firstWhere(
+      (acc) =>
+          acc.username == _username &&
+          acc.password == _password &&
+          !acc.isDeleted,
+      orElse:
+          () => Account(
+            userId: 0,
+            username: '',
+            password: '',
+            role: UserRole.student,
+            isDeleted: true,
+          ),
+    );
+
+    if (account.username.isNotEmpty) {
+      if (account.role == UserRole.student) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const StudentScreen()),
+        );
+      } else if (account.role == UserRole.teacher) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TeacherScreen()),
+        );
+      }
     } else {
       setState(() {
-        _errorMessage = 'Tài khoản không đúng';
+        _errorMessage = 'Tài khoản hoặc mật khẩu không đúng';
       });
     }
   }
@@ -57,18 +79,19 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
                   children: [
                     TextFormField(
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.email),
-                        labelText: 'Email',
+                        prefixIcon: const Icon(Icons.person),
+                        labelText:
+                            'Tên đăng nhập', // Đổi từ Email thành Tên đăng nhập
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       validator:
                           (v) =>
-                              (v == null || !v.contains('@'))
-                                  ? 'Email không hợp lệ'
-                                  : null,
-                      onSaved: (v) => _email = v!.trim(),
+                              (v == null || v.isEmpty)
+                                  ? 'Vui lòng nhập tên đăng nhập'
+                                  : null, // Xóa yêu cầu @
+                      onSaved: (v) => _username = v!.trim(),
                     ),
                     const SizedBox(height: 20),
                     TextFormField(
@@ -103,7 +126,7 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           backgroundColor: Colors.green,
                         ),
