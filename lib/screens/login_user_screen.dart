@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:question_and_answer_edu/database/student_table.dart';
 import 'teacher/teacher_screen.dart';
 import 'student/student_screen.dart';
-import '../database/account_table.dart'; // Import DBHelper để truy vấn tài khoản
+import '../database/account_table.dart';
 import '../../models.dart';
 
 class LoginUserScreen extends StatefulWidget {
@@ -16,7 +16,7 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
   final _formKey = GlobalKey<FormState>();
   String _username = '', _password = '';
   String? _errorMessage;
-  final DBHelper _dbHelper = DBHelper(); // Khởi tạo DBHelper
+  final DBHelper _dbHelper = DBHelper();
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -38,25 +38,35 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
           ),
     );
 
-    if (account.username.isNotEmpty && account.role == UserRole.student) {
-      final studentDb = StudentDBHelper();
-      final student = await studentDb.getStudentByCode(account.username);
-
-      if (student != null) {
+    if (account.username.isNotEmpty) {
+      if (account.role == UserRole.student) {
+        final studentDb = StudentDBHelper();
+        final student = await studentDb.getStudentByCode(account.username);
+        if (student != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => StudentScreen(studentCode: student.studentCode),
+            ),
+          );
+        } else {
+          setState(() {
+            _errorMessage =
+                'Không tìm thấy sinh viên với mã: ${account.username}';
+          });
+        }
+      } else if (account.role == UserRole.teacher) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => StudentScreen(studentCode: student.studentCode),
-          ),
+          MaterialPageRoute(builder: (_) => const TeacherScreen()),
         );
-      } else {
-        setState(() {
-          _errorMessage =
-              'Không tìm thấy sinh viên với mã: ${account.username}';
-        });
       }
+    } else {
+      setState(() {
+        _errorMessage = 'Sai tên đăng nhập hoặc mật khẩu';
+      });
     }
-  } // ✅ ← Đóng đúng hàm _login()
+  }
 
   @override
   Widget build(BuildContext context) {
