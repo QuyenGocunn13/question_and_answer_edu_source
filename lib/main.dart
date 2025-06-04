@@ -231,6 +231,13 @@ import 'screens/admin/student_management.dart';
 import 'screens/admin/teacher_management.dart';
 import 'screens/admin/user_management_view.dart';
 import './database/test.dart'; // import file chứa seedSampleData
+import './database/request_table.dart'; // Thêm import RequestDBHelper
+import './database/box_chat_table.dart'; // Thêm import ChatboxDBHelper
+import './database/message_table.dart'; // Thêm import MessageDBHelper
+import './database/student_table.dart'; // Thêm import StudentDBHelper
+import './database/teacher_table.dart'; // Thêm import TeacherDBHelper
+import 'screens/teacher/teacher_screen.dart'; // Thêm import TeacherScreen
+import './database/account_table.dart'; // Thêm import DBHelper
 
 // Hàm xóa file app_database.db (dùng khi cần reset)
 Future<void> deleteDatabaseFile() async {
@@ -246,19 +253,20 @@ Future<void> deleteDatabaseFile() async {
 
 // Hàm kiểm tra và tạo dữ liệu mẫu nếu cơ sở dữ liệu chưa tồn tại
 Future<void> initializeDatabase() async {
-  final dbPath = await getDatabasesPath();
-  final path = join(dbPath, 'app_database.db');
-  final exists = await databaseExists(path);
-  if (!exists) {
-    await seedSampleData(); // Tạo dữ liệu mẫu chỉ khi db chưa tồn tại
-    print('Sample data seeded at: $path');
+  final dbHelper = DBHelper();
+  final db = await dbHelper.database;
+  final accounts = await db.query('accounts');
+  if (accounts.isEmpty) {
+    print('Database is empty, seeding sample data...');
+    await seedSampleData();
+  } else {
+    print('Database already has data, skipping seed.');
   }
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Không xóa database mỗi lần chạy, chỉ khởi tạo nếu chưa có
+  await deleteDatabaseFile();
   await initializeDatabase();
 
   runApp(const MyApp());
@@ -276,9 +284,19 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const RoleSelectionScreen(),
+        '/login': (context) => const LoginUserScreen(),
         '/userManagement': (context) => const UserManagementView(),
         '/studentManagement': (context) => const StudentManagementView(),
         '/teacherManagement': (context) => const TeacherManagementView(),
+        '/teacherScreen': (context) => const TeacherScreen(userId: 1),
+      },
+      onUnknownRoute: (settings) {
+        return MaterialPageRoute(
+          builder:
+              (context) => const Scaffold(
+                body: Center(child: Text('Route không tồn tại')),
+              ),
+        );
       },
     );
   }

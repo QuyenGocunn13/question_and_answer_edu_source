@@ -12,7 +12,7 @@ class StudentDBHelper {
   StudentDBHelper._internal();
 
   Future<Database> get database async {
-    return await DBHelper().database;
+    return await DBHelper().database; // Sử dụng database từ DBHelper
   }
 
   String generateStudentCode() {
@@ -42,8 +42,7 @@ class StudentDBHelper {
           student.className.isEmpty ||
           student.major.isEmpty ||
           student.dateOfBirth == null) {
-        print('Lỗi: Các trường bắt buộc không được để trống');
-        return null;
+        throw Exception('Các trường bắt buộc không được để trống');
       }
 
       String studentCode;
@@ -61,8 +60,7 @@ class StudentDBHelper {
 
       int newUserId = await dbHelper.insertAccount(account);
       if (newUserId <= 0) {
-        print('Lỗi: Không thể tạo tài khoản, userId: $newUserId');
-        return null;
+        throw Exception('Không thể tạo tài khoản, userId: $newUserId');
       }
 
       final newStudent = Student(
@@ -102,8 +100,7 @@ class StudentDBHelper {
 
       return newStudent;
     } catch (e) {
-      print('Lỗi khi tạo student/account: $e');
-      return null;
+      throw Exception('Lỗi khi tạo student/account: $e');
     }
   }
 
@@ -124,6 +121,35 @@ class StudentDBHelper {
         gender: Gender.values.firstWhere(
           (e) => e.toString().split('.').last == data['gender'],
           orElse: () => Gender.male,
+        ),
+        dateOfBirth: DateTime.parse(data['dateOfBirth'] as String),
+        placeOfBirth: data['placeOfBirth'] as String,
+        className: data['className'] as String,
+        intakeYear: data['intakeYear'] as int,
+        major: data['major'] as String,
+        profileImage: data['profileImage'] as String,
+        isDeleted: (data['isDeleted'] as int) == 1,
+      );
+    }
+    return null;
+  }
+
+  Future<Student?> getStudentByUserId(int userId) async {
+    final db = await database;
+    final maps = await db.query(
+      'students',
+      where: 'userId = ? AND isDeleted = 0',
+      whereArgs: [userId],
+    );
+
+    if (maps.isNotEmpty) {
+      final data = maps.first;
+      return Student(
+        userId: data['userId'] as int,
+        studentCode: data['studentCode'] as String,
+        fullName: data['fullName'] as String,
+        gender: Gender.values.firstWhere(
+          (e) => e.toString().split('.').last == data['gender'],
         ),
         dateOfBirth: DateTime.parse(data['dateOfBirth'] as String),
         placeOfBirth: data['placeOfBirth'] as String,
@@ -158,8 +184,7 @@ class StudentDBHelper {
         whereArgs: [student.studentCode],
       );
     } catch (e) {
-      print('Lỗi khi cập nhật sinh viên: $e');
-      return 0;
+      throw Exception('Lỗi khi cập nhật sinh viên: $e');
     }
   }
 
@@ -168,13 +193,12 @@ class StudentDBHelper {
     try {
       return await db.update(
         'students',
-        {'isDeleted': 1}, // Sửa từ false thành 1
+        {'isDeleted': 1},
         where: 'studentCode = ?',
         whereArgs: [studentCode],
       );
     } catch (e) {
-      print('Lỗi khi xóa mềm sinh viên: $e');
-      return 0;
+      throw Exception('Lỗi khi xóa mềm sinh viên: $e');
     }
   }
 
@@ -203,8 +227,7 @@ class StudentDBHelper {
         );
       });
     } catch (e) {
-      print('Lỗi khi lấy danh sách sinh viên: $e');
-      return [];
+      throw Exception('Lỗi khi lấy danh sách sinh viên: $e');
     }
   }
 }

@@ -1,83 +1,131 @@
 import 'dart:async';
+import 'package:sqflite/sqflite.dart';
 import '../models.dart';
 import 'account_table.dart';
 import 'student_table.dart';
 import 'teacher_table.dart';
+import 'request_table.dart';
+import 'box_chat_table.dart';
+import 'message_table.dart';
 
 Future<void> seedSampleData() async {
-  final accountHelper = DBHelper();
-  final studentHelper = StudentDBHelper();
-  final teacherHelper = TeacherDBHelper();
-
-  // Xóa hết dữ liệu cũ (nếu cần)
-  // Đây là cách đơn giản nhất, bạn có thể thêm hàm xoá hoặc reset DB trong DBHelper nếu cần
+  final dbHelper = DBHelper();
+  final db = await dbHelper.database;
 
   print('=== Start seeding sample data ===');
 
-  // Tạo sample students
-  var student1 = Student(
-    userId: 0,
-    studentCode: '',
-    fullName: 'Nguyễn Văn A',
-    gender: Gender.male,
-    dateOfBirth: DateTime(2002, 3, 15),
-    placeOfBirth: 'Hà Nội',
-    className: 'CTK43',
-    intakeYear: 2020,
-    major: 'Công nghệ thông tin',
-    profileImage: 'https://i.imgur.com/LQbRwkt.jpeg',
-  );
+  try {
+    await db.transaction((txn) async {
+      // Chèn tài khoản
+      int accountId1 = await txn.insert('accounts', {
+        'username': 'student1@example.com',
+        'password': 'pass123',
+        'role': 'student',
+        'isDeleted': 0,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      print('Inserted account 1: $accountId1');
 
-  var student2 = Student(
-    userId: 0,
-    studentCode: '',
-    fullName: 'Trần Thị B',
-    gender: Gender.female,
-    dateOfBirth: DateTime(2001, 7, 22),
-    placeOfBirth: 'Hồ Chí Minh',
-    className: 'CTK43',
-    intakeYear: 2020,
-    major: 'Khoa học máy tính',
-    profileImage: 'https://i.imgur.com/LQbRwkt.jpeg',
-  );
+      int accountId2 = await txn.insert('accounts', {
+        'username': 'teacher1@example.com',
+        'password': 'pass123',
+        'role': 'teacher',
+        'isDeleted': 0,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      print('Inserted account 2: $accountId2');
 
-  // Tạo sample teachers
-  var teacher1 = Teacher(
-    userId: 0,
-    teacherCode: '',
-    fullName: 'Lê Văn C',
-    gender: Gender.male,
-    dateOfBirth: DateTime(1980, 1, 5),
-    profileImage: 'https://i.imgur.com/LQbRwkt.jpeg',
-  );
+      // Chèn sinh viên
+      int studentId = await txn.insert('students', {
+        'studentCode': 'SC001',
+        'userId': accountId1,
+        'fullName': 'Nguyễn Văn A',
+        'gender': 'male',
+        'dateOfBirth': '2000-01-05',
+        'placeOfBirth': 'Hà Nội',
+        'className': 'CNTT-K45',
+        'intakeYear': 2020,
+        'major': 'Công nghệ thông tin',
+        'profileImage': '',
+        'isDeleted': 0,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      print('Inserted student: $studentId');
 
-  var teacher2 = Teacher(
-    userId: 0,
-    teacherCode: '',
-    fullName: 'Phạm Thị D',
-    gender: Gender.female,
-    dateOfBirth: DateTime(1978, 11, 11),
-    profileImage: 'https://i.imgur.com/LQbRwkt.jpeg',
-  );
+      // Chèn giáo viên
+      int teacherId = await txn.insert('teachers', {
+        'teacherCode': 'TC001',
+        'userId': accountId2,
+        'fullName': 'Trần Thị B',
+        'gender': 'female',
+        'dateOfBirth': '1980-01-01',
+        'profileImage': '',
+        'isDeleted': 0,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      print('Inserted teacher: $teacherId');
 
-  // Insert students
-  Student? s1 = await studentHelper.insertStudent(student1);
-  Student? s2 = await studentHelper.insertStudent(student2);
+      // Chèn câu hỏi
+      int requestId = await txn.insert('requests', {
+        'studentUserId': accountId1,
+        'questionType': 'Học tập',
+        'title': 'Hỏi về học phí',
+        'content': 'Cho em hỏi về chính sách giảm học phí',
+        'attachedFilePath': null,
+        'status': 'pending',
+        'createdAt': DateTime.now().toIso8601String(),
+        'receiverUserId': accountId2,
+        'boxChatId': null,
+        'isDeleted': 0,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      print('Inserted request: $requestId');
 
-  // Insert teachers
-  Teacher? t1 = await teacherHelper.insertTeacher(teacher1);
-  Teacher? t2 = await teacherHelper.insertTeacher(teacher2);
+      // Chèn hộp thoại
+      int boxChatId = await txn.insert('box_chats', {
+        'requestId': requestId,
+        'senderUserId': accountId1,
+        'receiverUserId': accountId2,
+        'createdAt': DateTime.now().toIso8601String(),
+        'isClosedByStudent': 0,
+        'isClosedByReceiver': 0,
+        'isDeleted': 0,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      print('Inserted box chat: $boxChatId');
 
-  print('=== Sample data created ===');
-  print('Students:');
-  if (s1 != null) print('${s1.studentCode} - ${s1.fullName}');
-  if (s2 != null) print('${s2.studentCode} - ${s2.fullName}');
+      // Cập nhật boxChatId trong requests
+      await txn.update(
+        'requests',
+        {'boxChatId': boxChatId},
+        where: 'requestId = ?',
+        whereArgs: [requestId],
+      );
 
-  print('Teachers:');
-  if (t1 != null) print('${t1.teacherCode} - ${t1.fullName}');
-  if (t2 != null) print('${t2.teacherCode} - ${t2.fullName}');
-}
+      // Chèn tin nhắn
+      int messageId = await txn.insert('messages', {
+        'boxChatId': boxChatId,
+        'senderUserId': accountId1,
+        'content': 'Xin chào, em muốn hỏi về học phí.',
+        'sentAt': DateTime.now().toIso8601String(),
+        'isFile': 0,
+        'isDeleted': 0,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      print('Inserted message: $messageId');
 
-void main() async {
-  await seedSampleData();
+      // Chèn báo cáo
+      int reportId = await txn.insert('reports', {
+        'reporterUserId': accountId1,
+        'reportedUserId': accountId2,
+        'reason': 'Nội dung không phù hợp',
+        'reportedAt': DateTime.now().toIso8601String(),
+        'isHandled': 0,
+      });
+      print('Inserted report: $reportId');
+
+      // Chèn từ cấm
+      int bannedWordId = await txn.insert('banned_words', {'word': 'badword'});
+      print('Inserted banned word: $bannedWordId');
+    });
+
+    print('=== Sample data seeded successfully ===');
+  } catch (e) {
+    throw Exception('Error seeding sample data: $e');
+  }
+
+  await dbHelper.debugDatabase();
 }

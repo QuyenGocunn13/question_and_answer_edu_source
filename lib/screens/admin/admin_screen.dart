@@ -1,5 +1,7 @@
+// AdminScreen.dart
 import 'package:flutter/material.dart';
 import 'user_management_view.dart';
+import 'request_management_view.dart';
 import 'custom_bottom_navigation.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -21,6 +23,10 @@ class _AdminScreenState extends State<AdminScreen> {
 
   void _onItemTapped(int index) {
     setState(() => _currentIndex = index);
+  }
+
+  void _navigateToRequestManagement() {
+    setState(() => _currentIndex = 2); // Chuyển đến tab Yêu cầu
   }
 
   @override
@@ -71,7 +77,6 @@ class _AdminScreenState extends State<AdminScreen> {
                   ],
                 ),
               ),
-              // Dùng Expanded để tránh overflow
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -83,18 +88,17 @@ class _AdminScreenState extends State<AdminScreen> {
                   child: IndexedStack(
                     index: _currentIndex,
                     children: [
-                      // Bao OverviewTab bằng SingleChildScrollView cho cuộn tốt
                       SingleChildScrollView(
                         child: OverviewTab(
                           onNavigateToUserManagement: () {
-                            setState(() {
-                              _currentIndex = 1;
-                            });
+                            setState(() => _currentIndex = 1);
                           },
+                          onNavigateToRequestManagement:
+                              _navigateToRequestManagement, // Thêm callback
                         ),
                       ),
                       const UserManagementView(),
-                      const PlaceholderTab(title: 'Quản lý yêu cầu'),
+                      const RequestManagementView(),
                       const PlaceholderTab(title: 'Quản trị viên'),
                     ],
                   ),
@@ -115,9 +119,13 @@ class _AdminScreenState extends State<AdminScreen> {
 
 class OverviewTab extends StatelessWidget {
   final VoidCallback onNavigateToUserManagement;
+  final VoidCallback onNavigateToRequestManagement; // Thêm callback
 
-  const OverviewTab({Key? key, required this.onNavigateToUserManagement})
-    : super(key: key);
+  const OverviewTab({
+    Key? key,
+    required this.onNavigateToUserManagement,
+    required this.onNavigateToRequestManagement,
+  }) : super(key: key);
 
   final List<_FunctionItem> _functions = const [
     _FunctionItem(
@@ -145,7 +153,6 @@ class OverviewTab extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: GridView.builder(
-        // cho GridView có chiều cao bằng chiều của nội dung
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _functions.length,
@@ -167,6 +174,8 @@ class OverviewTab extends StatelessWidget {
               onTap: () {
                 if (item.title == 'Quản lý người dùng') {
                   onNavigateToUserManagement();
+                } else if (item.title == 'Quản lý yêu cầu') {
+                  onNavigateToRequestManagement(); // Sử dụng callback
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

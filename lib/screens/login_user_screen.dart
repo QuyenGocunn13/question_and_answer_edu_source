@@ -43,15 +43,16 @@ class _LoginUserScreenState extends State<LoginUserScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => const StudentScreen(),
-          ), // Giả định StudentScreen chưa yêu cầu userId
+            builder:
+                (_) =>
+                    StudentScreen(userId: account.userId), // Điều chỉnh nếu cần
+          ),
         );
       } else if (account.role == UserRole.teacher) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder:
-                (_) => TeacherScreen(userId: account.userId), // Truyền userId
+            builder: (_) => TeacherScreen(userId: account.userId),
           ),
         );
       }

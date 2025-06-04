@@ -32,44 +32,13 @@ class TeacherDBHelper {
     return result.isNotEmpty;
   }
 
-  Future<Teacher?> getTeacherByUserId(int userId) async {
-    final db = await database;
-    try {
-      final maps = await db.query(
-        'teachers',
-        where: 'userId = ? AND isDeleted = 0',
-        whereArgs: [userId],
-      );
-
-      if (maps.isEmpty) return null;
-
-      final data = maps.first;
-      return Teacher(
-        userId: data['userId'] as int,
-        teacherCode: data['teacherCode'] as String,
-        fullName: data['fullName'] as String,
-        gender: Gender.values.firstWhere(
-          (e) => e.toString().split('.').last == data['gender'],
-          orElse: () => Gender.male,
-        ),
-        dateOfBirth: DateTime.parse(data['dateOfBirth'] as String),
-        profileImage: data['profileImage'] as String? ?? '',
-        isDeleted: (data['isDeleted'] as int) == 1,
-      );
-    } catch (e) {
-      print('Lỗi khi lấy thông tin giáo viên theo userId: $e');
-      return null;
-    }
-  }
-
   Future<Teacher?> insertTeacher(Teacher teacher) async {
     final db = await database;
     final dbHelper = DBHelper();
 
     try {
       if (teacher.fullName.isEmpty || teacher.dateOfBirth == null) {
-        print('Lỗi: Các trường bắt buộc không được để trống');
-        return null;
+        throw Exception('Các trường bắt buộc không được để trống');
       }
 
       String teacherCode;
@@ -87,8 +56,7 @@ class TeacherDBHelper {
 
       int newUserId = await dbHelper.insertAccount(account);
       if (newUserId <= 0) {
-        print('Lỗi: Không thể tạo tài khoản, userId: $newUserId');
-        return null;
+        throw Exception('Không thể tạo tài khoản, userId: $newUserId');
       }
 
       final newTeacher = Teacher(
@@ -120,8 +88,7 @@ class TeacherDBHelper {
 
       return newTeacher;
     } catch (e) {
-      print('Lỗi khi tạo teacher/account: $e');
-      return null;
+      throw Exception('Lỗi khi tạo teacher/account: $e');
     }
   }
 
@@ -151,9 +118,33 @@ class TeacherDBHelper {
       }
       return null;
     } catch (e) {
-      print('Lỗi khi lấy thông tin giáo viên theo teacherCode: $e');
-      return null;
+      throw Exception('Lỗi khi lấy thông tin giáo viên theo teacherCode: $e');
     }
+  }
+
+  Future<Teacher?> getTeacherByUserId(int userId) async {
+    final db = await database;
+    final maps = await db.query(
+      'teachers',
+      where: 'userId = ? AND isDeleted = 0',
+      whereArgs: [userId],
+    );
+
+    if (maps.isNotEmpty) {
+      final data = maps.first;
+      return Teacher(
+        userId: data['userId'] as int,
+        teacherCode: data['teacherCode'] as String,
+        fullName: data['fullName'] as String,
+        gender: Gender.values.firstWhere(
+          (e) => e.toString().split('.').last == data['gender'],
+        ),
+        dateOfBirth: DateTime.parse(data['dateOfBirth'] as String),
+        profileImage: data['profileImage'] as String? ?? '',
+        isDeleted: (data['isDeleted'] as int) == 1,
+      );
+    }
+    return null;
   }
 
   Future<int> updateTeacher(Teacher teacher) async {
@@ -172,8 +163,7 @@ class TeacherDBHelper {
         whereArgs: [teacher.userId],
       );
     } catch (e) {
-      print('Lỗi khi cập nhật giáo viên: $e');
-      return 0;
+      throw Exception('Lỗi khi cập nhật giáo viên: $e');
     }
   }
 
@@ -187,8 +177,7 @@ class TeacherDBHelper {
         whereArgs: [teacherCode],
       );
     } catch (e) {
-      print('Lỗi khi xóa mềm giáo viên: $e');
-      return 0;
+      throw Exception('Lỗi khi xóa mềm giáo viên: $e');
     }
   }
 
@@ -213,8 +202,7 @@ class TeacherDBHelper {
         );
       });
     } catch (e) {
-      print('Lỗi khi lấy danh sách giáo viên: $e');
-      return [];
+      throw Exception('Lỗi khi lấy danh sách giáo viên: $e');
     }
   }
 }
