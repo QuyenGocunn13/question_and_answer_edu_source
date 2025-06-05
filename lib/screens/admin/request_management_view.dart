@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../chat_view.dart';
-import '../../database/account_table.dart';
 import '../../database/request_table.dart';
 import '../../database/box_chat_table.dart';
+import '../../database/teacher_table.dart';
 
 class RequestManagementView extends StatefulWidget {
   const RequestManagementView({Key? key}) : super(key: key);
@@ -15,7 +15,6 @@ class RequestManagementView extends StatefulWidget {
 class _RequestManagementViewState extends State<RequestManagementView> {
   final _requestDBHelper = RequestDBHelper();
   final _chatboxDBHelper = ChatboxDBHelper();
-  final _dbHelper = DBHelper();
   List<Request> _pendingRequests = [];
   List<Teacher> _teachers = [];
 
@@ -27,7 +26,13 @@ class _RequestManagementViewState extends State<RequestManagementView> {
 
   Future<void> _loadData() async {
     final requests = await _requestDBHelper.getRequestsByStatus('pending');
-    final teachers = await _dbHelper.getTeachers();
+    final teachers = await TeacherDBHelper().getAllTeachers();
+
+    print('Có ${teachers.length} giáo viên để phân công');
+    for (var t in teachers) {
+      print('GV: ${t.fullName} (${t.userId})');
+    }
+
     setState(() {
       _pendingRequests = requests;
       _teachers = teachers;
@@ -44,7 +49,7 @@ class _RequestManagementViewState extends State<RequestManagementView> {
 
     final teacherId = selectedTeacherId ?? request.receiverUserId!;
     final boxChat = BoxChat(
-      boxChatId: 0, // Sẽ được tự động tạo
+      boxChatId: 0,
       requestId: request.requestId!,
       senderUserId: request.studentUserId,
       receiverUserId: teacherId,
@@ -56,7 +61,15 @@ class _RequestManagementViewState extends State<RequestManagementView> {
 
     final db = await _requestDBHelper.database;
     await db.transaction((txn) async {
-      final boxChatId = await _chatboxDBHelper.insertBoxChat(boxChat);
+      final boxChatId = await txn.insert('box_chats', {
+        'requestId': boxChat.requestId,
+        'senderUserId': boxChat.senderUserId,
+        'receiverUserId': boxChat.receiverUserId,
+        'isClosedByStudent': boxChat.isClosedByStudent ? 1 : 0,
+        'createdAt': boxChat.createdAt.toIso8601String(),
+        'isClosedByReceiver': boxChat.isClosedByReceiver ? 1 : 0,
+        'isDeleted': boxChat.isDeleted ? 1 : 0,
+      });
       await txn.update(
         'requests',
         {
@@ -98,7 +111,7 @@ class _RequestManagementViewState extends State<RequestManagementView> {
   }
 
   void _showRequestDetails(BuildContext context, Request request) {
-    int? selectedTeacherId;
+    int? selectedTeacherId = request.receiverUserId;
 
     showDialog(
       context: context,
@@ -240,8 +253,16 @@ class _RequestManagementViewState extends State<RequestManagementView> {
                     if (request.status == RequestStatus.pending)
                       TextButton(
                         onPressed: () {
-                          _approveRequest(request, selectedTeacherId);
+                          if (selectedTeacherId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Vui lòng chọn giảng viên'),
+                              ),
+                            );
+                            return;
+                          }
                           Navigator.pop(context);
+                          _approveRequest(request, selectedTeacherId);
                         },
                         child: const Text(
                           'Duyệt',

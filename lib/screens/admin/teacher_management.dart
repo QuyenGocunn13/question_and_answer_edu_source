@@ -1,10 +1,9 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../../models.dart';
 import '../../database/teacher_table.dart';
+import '../../database/account_table.dart';
 
 class TeacherManagementView extends StatefulWidget {
   final VoidCallback? onBack;
@@ -17,11 +16,15 @@ class TeacherManagementView extends StatefulWidget {
 
 class _TeacherManagementViewState extends State<TeacherManagementView> {
   final TeacherDBHelper _dbHelper = TeacherDBHelper();
+  final DBHelper _accountHelper = DBHelper();
 
   List<Teacher> _teachers = [];
   Teacher? _selectedTeacher;
 
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
   Gender _gender = Gender.male;
   DateTime? _dob;
   File? _imageFile;
@@ -32,8 +35,6 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
     super.initState();
     _loadTeachers();
   }
-
-  
 
   Future<void> _loadTeachers() async {
     final list = await _dbHelper.getAllTeachers();
@@ -69,22 +70,6 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
       initialDate: _dob ?? DateTime(now.year - 30),
       firstDate: DateTime(1950),
       lastDate: now,
-      builder:
-          (ctx, child) => Theme(
-            data: Theme.of(ctx).copyWith(
-              colorScheme: const ColorScheme.light(
-                primary: Color(0xFF0D47A1), // xanh đậm
-                onPrimary: Colors.white,
-                onSurface: Colors.black87,
-              ),
-              textButtonTheme: TextButtonThemeData(
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF0D47A1),
-                ),
-              ),
-            ),
-            child: child!,
-          ),
     );
     if (picked != null) setState(() => _dob = picked);
   }
@@ -92,6 +77,8 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
   void _newTeacher() {
     _selectedTeacher = null;
     _nameController.clear();
+    _usernameController.clear();
+    _passwordController.clear();
     _gender = Gender.male;
     _dob = null;
     _imageFile = null;
@@ -101,34 +88,48 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
 
   Future<void> _save() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Vui lòng nhập họ và tên')));
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (name.isEmpty || (_isNew && (username.isEmpty || password.isEmpty))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
+      );
       return;
     }
 
     if (_isNew) {
-      final newTeacher = Teacher(
-        teacherCode: '',
-        userId: 0,
-        fullName: name,
-        gender: _gender,
-        dateOfBirth: _dob ?? DateTime.now(),
-        profileImage: _imageFile?.path ?? '',
-        isDeleted: false,
-      );
-      final created = await _dbHelper.insertTeacher(newTeacher);
-      if (created != null) {
-        await _loadTeachers();
-        _selectTeacher(created);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Thêm giáo viên thành công')),
+      try {
+        final newAccount = Account(
+          username: username,
+          password: password,
+          role: UserRole.teacher,
+          isDeleted: false,
         );
-      } else {
+        final userId = await _accountHelper.insertAccount(newAccount);
+
+        final newTeacher = Teacher(
+          teacherCode: 'GV${DateTime.now().millisecondsSinceEpoch}',
+          userId: userId,
+          fullName: name,
+          gender: _gender,
+          dateOfBirth: _dob ?? DateTime.now(),
+          profileImage: _imageFile?.path ?? '',
+          isDeleted: false,
+        );
+
+        final created = await _dbHelper.insertTeacher(newTeacher);
+        if (created != null) {
+          await _loadTeachers();
+          _selectTeacher(created);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Thêm giáo viên thành công')),
+          );
+        }
+      } catch (e) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Lỗi khi tạo giáo viên')));
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
       }
     } else {
       if (_selectedTeacher == null) return;
@@ -152,214 +153,42 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
     }
   }
 
-  InputDecoration _inputDecoration(String label) => InputDecoration(
-    labelText: label,
-    labelStyle: const TextStyle(
-      color: Colors.black87,
-      fontWeight: FontWeight.w600,
-    ),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: const BorderSide(color: Color(0xFF90A4AE)),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: const BorderSide(color: Color(0xFF0D47A1), width: 2),
-    ),
-    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-  );
-
-  Widget _buildCreateButton() {
-    return SizedBox(
-      height: 48,
-      child: TextButton.icon(
-        onPressed: _newTeacher,
-        style: TextButton.styleFrom(
-          backgroundColor: const Color(0xFF0D47A1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          elevation: 2,
-        ),
-        icon: const Icon(Icons.person_add_alt_1, color: Colors.white),
-        label: const Text(
-          'Tạo mới giáo viên',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTeacherList() {
-    return SizedBox(
-      height: 220,
-      child: ListView.separated(
-        itemCount: _teachers.length,
-        separatorBuilder:
-            (_, __) => const Divider(height: 1, color: Color(0xFFE0E0E0)),
-        itemBuilder: (context, i) {
-          final t = _teachers[i];
-          final selected = t.teacherCode == _selectedTeacher?.teacherCode;
-          return ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-            leading: CircleAvatar(
-              radius: 24,
-              backgroundImage:
-                  t.profileImage.isNotEmpty
-                      ? (Uri.tryParse(t.profileImage)?.isAbsolute ?? false)
-                          ? NetworkImage(t.profileImage)
-                          : FileImage(File(t.profileImage)) as ImageProvider
-                      : null,
-              child:
-                  t.profileImage.isEmpty
-                      ? const Icon(Icons.person, color: Color(0xFF0D47A1))
-                      : null,
-              backgroundColor: Colors.grey.shade100,
-            ),
-            title: Text(
-              t.fullName,
-              style: TextStyle(
-                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                color: Colors.black87,
-                fontSize: 16,
-              ),
-            ),
-            subtitle: Text(
-              t.teacherCode,
-              style: const TextStyle(color: Colors.black54, fontSize: 13),
-            ),
-            onTap: () => _selectTeacher(t),
-            selected: selected,
-            selectedTileColor: Colors.blue.shade50,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildProfileImage() {
-    final imageProvider =
-        _imageFile != null
-            ? FileImage(_imageFile!)
-            : (_selectedTeacher != null &&
-                        _selectedTeacher!.profileImage.isNotEmpty
-                    ? (Uri.tryParse(
-                              _selectedTeacher!.profileImage,
-                            )?.isAbsolute ??
-                            false)
-                        ? NetworkImage(_selectedTeacher!.profileImage)
-                        : FileImage(File(_selectedTeacher!.profileImage))
-                    : null)
-                as ImageProvider<Object>?;
-
-    return Center(
-      child: GestureDetector(
-        onTap: _pickImage,
-        child: Stack(
-          alignment: Alignment.bottomRight,
-          children: [
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: Colors.grey.shade100,
-              backgroundImage: imageProvider,
-              child:
-                  imageProvider == null
-                      ? const Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Color(0xFF0D47A1),
-                      )
-                      : null,
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF0D47A1),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-              padding: const EdgeInsets.all(6),
-              child: const Icon(
-                Icons.camera_alt,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildGenderDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF90A4AE)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: DropdownButton<Gender>(
-        value: _gender,
-        isExpanded: true,
-        underline: const SizedBox(),
-        iconEnabledColor: const Color(0xFF0D47A1),
-        items:
-            Gender.values
-                .map(
-                  (g) => DropdownMenuItem(
-                    value: g,
-                    child: Text(
-                      g.toString().split('.').last.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-        onChanged: (v) {
-          if (v != null) setState(() => _gender = v);
-        },
-      ),
+    return DropdownButtonFormField<Gender>(
+      value: _gender,
+      decoration: const InputDecoration(labelText: 'Giới tính'),
+      items:
+          Gender.values
+              .map(
+                (g) => DropdownMenuItem(
+                  value: g,
+                  child: Text(g.toString().split('.').last.toUpperCase()),
+                ),
+              )
+              .toList(),
+      onChanged: (g) {
+        if (g != null) setState(() => _gender = g);
+      },
     );
   }
 
   Widget _buildDobPicker() {
     return GestureDetector(
       onTap: _pickDate,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFF90A4AE)),
-          borderRadius: BorderRadius.circular(8),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Ngày sinh',
+          border: OutlineInputBorder(),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: Text(
-                _dob == null
-                    ? 'Ngày sinh'
-                    : '${_dob!.day.toString().padLeft(2, '0')}/'
-                        '${_dob!.month.toString().padLeft(2, '0')}/'
-                        '${_dob!.year}',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _dob == null ? Colors.black54 : Colors.black87,
-                  fontWeight:
-                      _dob == null ? FontWeight.normal : FontWeight.w600,
-                ),
-              ),
+            Text(
+              _dob == null
+                  ? 'Chưa chọn'
+                  : '${_dob!.day}/${_dob!.month}/${_dob!.year}',
             ),
-            const Icon(Icons.calendar_today, color: Color(0xFF0D47A1)),
+            const Icon(Icons.calendar_today),
           ],
         ),
       ),
@@ -367,27 +196,15 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
   }
 
   Widget _buildSaveButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: _save,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF0D47A1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          elevation: 3,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-        ),
-        child: const Text(
-          'Lưu',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+    return ElevatedButton(
+      onPressed: _save,
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(double.infinity, 50),
+        backgroundColor: Colors.blue.shade800,
+      ),
+      child: const Text(
+        'Lưu',
+        style: TextStyle(fontSize: 16, color: Colors.white),
       ),
     );
   }
@@ -395,6 +212,8 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -403,58 +222,40 @@ class _TeacherManagementViewState extends State<TeacherManagementView> {
     final isEmpty = _selectedTeacher == null && !_isNew;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Quản trị Giáo viên',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w700),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF0D47A1)),
-        leading:
-            widget.onBack == null
-                ? null
-                : IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: widget.onBack,
-                ),
+      appBar: AppBar(title: const Text('Quản trị Giáo viên')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _newTeacher,
+        child: const Icon(Icons.add),
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildCreateButton(),
-            const SizedBox(height: 24),
-            if (_teachers.isNotEmpty) _buildTeacherList(),
-            if (_teachers.isNotEmpty) const SizedBox(height: 24),
-            if (isEmpty)
-              const Center(
-                child: Text(
-                  'Chọn giáo viên để xem chi tiết',
-                  style: TextStyle(fontSize: 18, color: Colors.black54),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              if (_isNew) ...[
+                TextField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(labelText: 'Tên đăng nhập'),
                 ),
-              )
-            else ...[
-              _buildProfileImage(),
-              const SizedBox(height: 30),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(labelText: 'Mật khẩu'),
+                ),
+              ],
+              const SizedBox(height: 12),
               TextField(
                 controller: _nameController,
-                decoration: _inputDecoration('Họ và tên'),
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.w600,
-                ),
+                decoration: const InputDecoration(labelText: 'Họ và tên'),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               _buildGenderDropdown(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               _buildDobPicker(),
-              const SizedBox(height: 44),
+              const SizedBox(height: 24),
               _buildSaveButton(),
             ],
-          ],
+          ),
         ),
       ),
     );

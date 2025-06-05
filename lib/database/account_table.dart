@@ -15,29 +15,35 @@ class DBHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('app_database.db');
+    _database = await _initDB('app_database_v6.db');
     return _database!;
   }
 
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    print('Initializing database at: $path');
+    print('Initializing database at: \$path');
     var db = await openDatabase(
       path,
-      version: 5, // Tăng version do thay đổi schema
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
-    await db.execute('PRAGMA foreign_keys = ON'); // Bật FOREIGN KEY
+    await db.execute('PRAGMA foreign_keys = ON');
     return db;
   }
 
   Future _createDB(Database db, int version) async {
     print('Creating database tables...');
-    // Tạo bảng accounts
+    await createTables(db);
+    print('Database tables created successfully');
+  }
+
+  Future<void> createTables(Database db) async {
+    print('Re-creating database tables via createTables...');
+
     await db.execute('''
-      CREATE TABLE accounts (
+      CREATE TABLE IF NOT EXISTS accounts (
         userId INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
@@ -46,9 +52,8 @@ class DBHelper {
       )
     ''');
 
-    // Tạo bảng students
     await db.execute('''
-      CREATE TABLE students (
+      CREATE TABLE IF NOT EXISTS students (
         studentCode TEXT PRIMARY KEY,
         userId INTEGER NOT NULL UNIQUE,
         fullName TEXT NOT NULL,
@@ -64,9 +69,8 @@ class DBHelper {
       )
     ''');
 
-    // Tạo bảng teachers
     await db.execute('''
-      CREATE TABLE teachers (
+      CREATE TABLE IF NOT EXISTS teachers (
         teacherCode TEXT PRIMARY KEY,
         userId INTEGER NOT NULL UNIQUE,
         fullName TEXT NOT NULL,
@@ -78,15 +82,14 @@ class DBHelper {
       )
     ''');
 
-    // Tạo bảng requests
     await db.execute('''
-      CREATE TABLE requests (
+      CREATE TABLE IF NOT EXISTS requests (
         requestId INTEGER PRIMARY KEY AUTOINCREMENT,
         studentUserId INTEGER NOT NULL,
         questionType TEXT NOT NULL,
         title TEXT NOT NULL,
         content TEXT NOT NULL,
-        attachedFilePath TEXT, -- Thêm trường này
+        attachedFilePath TEXT,
         status TEXT NOT NULL,
         createdAt TEXT NOT NULL,
         receiverUserId INTEGER,
@@ -98,107 +101,62 @@ class DBHelper {
       )
     ''');
 
-    // Tạo bảng box_chats
     await db.execute('''
-      CREATE TABLE box_chats (
+      CREATE TABLE IF NOT EXISTS box_chats (
         boxChatId INTEGER PRIMARY KEY AUTOINCREMENT,
         requestId INTEGER NOT NULL,
         senderUserId INTEGER NOT NULL,
         receiverUserId INTEGER NOT NULL,
         createdAt TEXT NOT NULL,
-        isClosedByStudent INTEGER NOT NULL DEFAULT 0, -- Thêm trường này
-        isClosedByReceiver INTEGER NOT NULL DEFAULT 0, -- Thêm trường này
-        isDeleted INTEGER NOT NULL DEFAULT 0, -- Thêm trường này
+        isClosedByStudent INTEGER NOT NULL DEFAULT 0,
+        isClosedByReceiver INTEGER NOT NULL DEFAULT 0,
+        isDeleted INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (requestId) REFERENCES requests(requestId),
         FOREIGN KEY (senderUserId) REFERENCES accounts(userId),
         FOREIGN KEY (receiverUserId) REFERENCES accounts(userId)
       )
     ''');
 
-    // Tạo bảng messages
     await db.execute('''
-      CREATE TABLE messages (
+      CREATE TABLE IF NOT EXISTS messages (
         messageId INTEGER PRIMARY KEY AUTOINCREMENT,
         boxChatId INTEGER NOT NULL,
         senderUserId INTEGER NOT NULL,
         content TEXT NOT NULL,
         sentAt TEXT NOT NULL,
-        isFile INTEGER NOT NULL DEFAULT 0, -- Thêm trường này
+        isFile INTEGER NOT NULL DEFAULT 0,
         isDeleted INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (boxChatId) REFERENCES box_chats(boxChatId),
         FOREIGN KEY (senderUserId) REFERENCES accounts(userId)
       )
     ''');
 
-    // Tạo bảng reports
     await db.execute('''
-      CREATE TABLE reports (
+      CREATE TABLE IF NOT EXISTS reports (
         reportId INTEGER PRIMARY KEY AUTOINCREMENT,
         reporterUserId INTEGER NOT NULL,
         reportedUserId INTEGER NOT NULL,
         reason TEXT NOT NULL,
-        reportedAt TEXT NOT NULL, -- Sử dụng TEXT thay vì DATETIME
+        reportedAt TEXT NOT NULL,
         isHandled INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (reporterUserId) REFERENCES accounts(userId),
         FOREIGN KEY (reportedUserId) REFERENCES accounts(userId)
       )
     ''');
 
-    // Tạo bảng banned_words
     await db.execute('''
-      CREATE TABLE banned_words (
+      CREATE TABLE IF NOT EXISTS banned_words (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         word TEXT NOT NULL UNIQUE
       )
     ''');
 
-    print('Database tables created successfully');
+    print('All tables created successfully via createTables.');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    print('Upgrading database from version $oldVersion to $newVersion');
-    if (oldVersion < 5) {
-      // Thêm trường attachedFilePath cho requests
-      await db.execute('ALTER TABLE requests ADD COLUMN attachedFilePath TEXT');
-
-      // Thêm các trường cho box_chats
-      await db.execute(
-        'ALTER TABLE box_chats ADD COLUMN isClosedByStudent INTEGER NOT NULL DEFAULT 0',
-      );
-      await db.execute(
-        'ALTER TABLE box_chats ADD COLUMN isClosedByReceiver INTEGER NOT NULL DEFAULT 0',
-      );
-      await db.execute(
-        'ALTER TABLE box_chats ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0',
-      );
-
-      // Thêm trường isFile cho messages
-      await db.execute(
-        'ALTER TABLE messages ADD COLUMN isFile INTEGER NOT NULL DEFAULT 0',
-      );
-
-      // Tạo bảng reports nếu chưa tồn tại
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS reports (
-          reportId INTEGER PRIMARY KEY AUTOINCREMENT,
-          reporterUserId INTEGER NOT NULL,
-          reportedUserId INTEGER NOT NULL,
-          reason TEXT NOT NULL,
-          reportedAt TEXT NOT NULL,
-          isHandled INTEGER NOT NULL DEFAULT 0,
-          FOREIGN KEY (reporterUserId) REFERENCES accounts(userId),
-          FOREIGN KEY (reportedUserId) REFERENCES accounts(userId)
-        )
-      ''');
-
-      // Tạo bảng banned_words nếu chưa tồn tại
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS banned_words (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          word TEXT NOT NULL UNIQUE
-        )
-      ''');
-    }
+    print('Upgrading database from version \$oldVersion to \$newVersion');
+    await createTables(db);
   }
 
   // Các hàm còn lại giữ nguyên, vì đã khớp với schema

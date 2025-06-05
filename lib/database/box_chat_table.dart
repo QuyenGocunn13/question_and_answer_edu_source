@@ -11,22 +11,16 @@ class ChatboxDBHelper {
     return await DBHelper().database;
   }
 
-  Future<int> insertBoxChat(BoxChat boxChat) async {
-    final db = await database;
-    return await db.transaction((txn) async {
-      try {
-        return await txn.insert('box_chats', {
-          'requestId': boxChat.requestId,
-          'senderUserId': boxChat.senderUserId,
-          'receiverUserId': boxChat.receiverUserId,
-          'createdAt': boxChat.createdAt.toIso8601String(),
-          'isClosedByStudent': boxChat.isClosedByStudent ? 1 : 0,
-          'isClosedByReceiver': boxChat.isClosedByReceiver ? 1 : 0,
-          'isDeleted': boxChat.isDeleted ? 1 : 0,
-        }, conflictAlgorithm: ConflictAlgorithm.replace);
-      } catch (e) {
-        throw Exception('Lỗi khi chèn box chat: $e');
-      }
+  Future<int> insertBoxChat(BoxChat boxChat, {DatabaseExecutor? txn}) async {
+    final db = txn ?? await database;
+    return await db.insert('box_chats', {
+      'requestId': boxChat.requestId,
+      'senderUserId': boxChat.senderUserId,
+      'receiverUserId': boxChat.receiverUserId,
+      'isClosedByStudent': boxChat.isClosedByStudent ? 1 : 0,
+      'createdAt': boxChat.createdAt.toIso8601String(),
+      'isClosedByReceiver': boxChat.isClosedByReceiver ? 1 : 0,
+      'isDeleted': boxChat.isDeleted ? 1 : 0,
     });
   }
 
